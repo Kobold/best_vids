@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import dataset
 import httplib2
 import os
 import sys
@@ -63,34 +64,50 @@ youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
 # Retrieve the contentDetails part of the channel resource for the
 # authenticated user's channel.
 channels_response = youtube.channels().list(
-  mine=True,
+  forUsername="majesticcasual",
   part="contentDetails"
 ).execute()
 
-for channel in channels_response["items"]:
-  # From the API response, extract the playlist ID that identifies the list
-  # of videos uploaded to the authenticated user's channel.
-  uploads_list_id = channel["contentDetails"]["relatedPlaylists"]["uploads"]
+assert len(channels_response["items"]) == 1
+channel = channels_response["items"][0]
 
-  print "Videos in list %s" % uploads_list_id
+# From the API response, extract the playlist ID that identifies the list
+# of videos uploaded to the authenticated user's channel.
+uploads_list_id = channel["contentDetails"]["relatedPlaylists"]["uploads"]
 
-  # Retrieve the list of videos uploaded to the authenticated user's channel.
-  playlistitems_list_request = youtube.playlistItems().list(
-    playlistId=uploads_list_id,
-    part="snippet",
-    maxResults=50
-  )
+print "Videos in list %s" % uploads_list_id
 
-  while playlistitems_list_request:
-    playlistitems_list_response = playlistitems_list_request.execute()
+# Retrieve the list of videos uploaded to the authenticated user's channel.
+playlistitems_list_request = youtube.playlistItems().list(
+  playlistId=uploads_list_id,
+  part="snippet",
+  maxResults=50
+)
 
-    # Print information about each video.
-    for playlist_item in playlistitems_list_response["items"]:
-      title = playlist_item["snippet"]["title"]
-      video_id = playlist_item["snippet"]["resourceId"]["videoId"]
-      print "%s (%s)" % (title, video_id)
+db = dataset.connect('sqlite:///mydatabase.db')
+table = db['videos']
 
-    playlistitems_list_request = youtube.playlistItems().list_next(
-      playlistitems_list_request, playlistitems_list_response)
+while playlistitems_list_request:
+  playlistitems_list_response = playlistitems_list_request.execute()
 
-  print
+  # Print information about each video.
+  for playlist_item in playlistitems_list_response["items"]:
+    title = playlist_item["snippet"]["title"]
+    video_id = playlist_item["snippet"]["resourceId"]["videoId"]
+
+    videos_response = youtube.videos().list(
+      id=video_id,
+      part='snippet,statistics').execute()
+    assert len(videos_response["items"]) == 1
+    video = videos_response["items"][0]
+
+    likeCount = int(video['statistics']['likeCount'])
+    dislikeCount = int(video['statistics']['dislikeCount'])
+    print "%s (%s) %d, %d" % (title, video_id, likeCount, dislikeCount)
+    table.insert(dict(
+      title=title, video_id=video_id, likeCount=likeCount, dislikeCount=dislikeCount))
+
+  playlistitems_list_request = youtube.playlistItems().list_next(
+    playlistitems_list_request, playlistitems_list_response)
+
+print
