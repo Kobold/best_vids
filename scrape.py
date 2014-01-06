@@ -111,3 +111,82 @@ while playlistitems_list_request:
     playlistitems_list_request, playlistitems_list_response)
 
 print
+
+"""
+playlist_item
+{
+    "snippet": {
+        "playlistId": "UUXIyz409s7bNWVcM-vjfdVA", 
+        "thumbnails": {
+            "default": {
+                "url": "https://i1.ytimg.com/vi/v5yHI3KsaM4/default.jpg"
+            }, 
+            "high": {
+                "url": "https://i1.ytimg.com/vi/v5yHI3KsaM4/hqdefault.jpg"
+            }, 
+            "medium": {
+                "url": "https://i1.ytimg.com/vi/v5yHI3KsaM4/mqdefault.jpg"
+            }, 
+            "maxres": {
+                "url": "https://i1.ytimg.com/vi/v5yHI3KsaM4/maxresdefault.jpg"
+            }, 
+            "standard": {
+                "url": "https://i1.ytimg.com/vi/v5yHI3KsaM4/sddefault.jpg"
+            }
+        }, 
+        "title": "Samuel Truth - Rua", 
+        "resourceId": {
+            "kind": "youtube#video", 
+            "videoId": "v5yHI3KsaM4"
+        }, 
+        "channelId": "UCXIyz409s7bNWVcM-vjfdVA", 
+        "publishedAt": "2014-01-05T20:16:43.000Z", 
+        "channelTitle": "Majestic Casual", 
+        "position": 0, 
+        "description": "Majestic Casual - Experience music in a new way.\n\u00bb Facebook: http://on.fb.me/majesticfb\n\u00bb Twitter: http://bit.ly/majestictwitter\n\nSamuel Truth, inspiring music! \n\n\u2716 Download Samuel Truth - Rua\nhttps://www.mediafire.com/?icopm7qsivd67o2\n\n\u2716 Follow Samuel Truth\nhttp://soundcloud.com/samueltruth\nhttp://www.facebook.com/samueltruthbeats\nhttp://twitter.com/Samuel_Truth\n\n\u2716 Picture \u00a9 Ren Rox\nhttp://www.renrox.com/"
+    }, 
+    "kind": "youtube#playlistItem", 
+    "etag": "\"KJzxKWJo5Mkivb-iOczuzoxz-Rk/GtZoxvWRhGA3KERRvBApEGbVTcU\"", 
+    "id": "UUIqk53Tt6m54k_VWtdn34vYFcvNbIg9E1"
+}
+
+video
+{
+    "snippet": {
+        "thumbnails": {
+            "default": {
+                "url": "https://i1.ytimg.com/vi/v5yHI3KsaM4/default.jpg"
+            }, 
+            "high": {
+                "url": "https://i1.ytimg.com/vi/v5yHI3KsaM4/hqdefault.jpg"
+            }, 
+            "medium": {
+                "url": "https://i1.ytimg.com/vi/v5yHI3KsaM4/mqdefault.jpg"
+            }, 
+            "maxres": {
+                "url": "https://i1.ytimg.com/vi/v5yHI3KsaM4/maxresdefault.jpg"
+            }, 
+            "standard": {
+                "url": "https://i1.ytimg.com/vi/v5yHI3KsaM4/sddefault.jpg"
+            }
+        }, 
+        "title": "Samuel Truth - Rua", 
+        "channelId": "UCXIyz409s7bNWVcM-vjfdVA", 
+        "publishedAt": "2014-01-05T20:29:55.000Z", 
+        "liveBroadcastContent": "none", 
+        "channelTitle": "Majestic Casual", 
+        "categoryId": "10", 
+        "description": "Majestic Casual - Experience music in a new way.\n\u00bb Facebook: http://on.fb.me/majesticfb\n\u00bb Twitter: http://bit.ly/majestictwitter\n\nSamuel Truth, inspiring music! \n\n\u2716 Download Samuel Truth - Rua\nhttps://www.mediafire.com/?icopm7qsivd67o2\n\n\u2716 Follow Samuel Truth\nhttp://soundcloud.com/samueltruth\nhttp://www.facebook.com/samueltruthbeats\nhttp://twitter.com/Samuel_Truth\n\n\u2716 Picture \u00a9 Ren Rox\nhttp://www.renrox.com/"
+    }, 
+    "statistics": {
+        "commentCount": "148", 
+        "viewCount": "44300", 
+        "favoriteCount": "0", 
+        "dislikeCount": "23", 
+        "likeCount": "1712"
+    }, 
+    "kind": "youtube#video", 
+    "etag": "\"UwFsu5nBFZheQ0Mj5CMLrV9G9b8/kFnCpoD-ALhMEg__s8KsGguUx9A\"", 
+    "id": "v5yHI3KsaM4"
+}
+"""
