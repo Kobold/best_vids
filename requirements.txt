@@ -1,0 +1,1 @@
+https://github.com/mitsuhiko/click/tarball/master#egg=click
