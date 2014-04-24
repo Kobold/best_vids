@@ -11,7 +11,8 @@ from oauth2client.file import Storage
 from oauth2client.tools import argparser, run_flow
 
 
-db = dataset.connect('sqlite:///mydatabase.db')
+db = dataset.connect('sqlite:///' +
+    os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mydatabase.db'))
 
 
 @click.group()
