@@ -139,7 +139,7 @@ def bestof(username):
 https://www.youtube.com/watch?v=%s
     """
 
-    for v in sorted(table.all(), key=as_ratio):
+    for v in sorted(table.all(), key=lambda v: (as_ratio(v), v['likeCount'])):
         print template % (
             as_ratio(v),
             v['likeCount'],
