@@ -17,12 +17,32 @@ BEST_VIDS_DIR = os.path.dirname(os.path.realpath(__file__))
 db = dataset.connect('sqlite:///' + os.path.join(BEST_VIDS_DIR, 'mydatabase.db'))
 
 
-@click.group()
-def cli():
-    pass
+class DefaultGroup(click.Group):
+    """If the command name is not found, try doing bestof username."""
+    def get_command(self, ctx, cmd_name):
+        if cmd_name not in self.commands:
+            name = ctx.args[0]
+            channel_table = db['channel']
+            channel = channel_table.find_one(id=name) or channel_table.find_one(title=name)
+            if channel is not None:
+                # The default Context.invoke_subcommand will slice off the first
+                # argument of `ctx.args`, so we add a spare copy of the channel
+                # name to the args.
+                ctx.args.append(name)
+                return self.commands.get('bestof')
+
+        return self.commands.get(cmd_name)
 
 
-@click.command()
+@click.group(invoke_without_command=True, cls=DefaultGroup)
+@click.pass_context
+def cli(ctx):
+    # Display scraped channels if there's no argument given.
+    if ctx.invoked_subcommand is None:
+        ctx.forward(list_)
+
+
+@cli.command()
 @click.argument('username')
 def scrape(username):
     """Scrape a given user's videos and ratings."""
@@ -152,17 +172,20 @@ def as_ratio(video):
     return likes / total
 
 
-@click.command()
+@cli.command()
 @click.argument('username')
-def bestof(username):
+@click.pass_context
+def bestof(ctx, username):
     """Best rated videos for a given user."""
     channel_table = db['channel']
     channel = channel_table.find_one(id=username) or channel_table.find_one(title=username)
+    if channel is None:
+        ctx.fail('No such username: %s' % username)
 
     video_table = db['videos']
     videos = video_table.find(channel_fk=channel['channel_id'])
 
-    template = """{:05.3f}\t{:,}\t{:,}\t{} ({:,} views)
+    template = u"""{:05.3f}\t{:,}\t{:,}\t{} ({:,} views)
 https://www.youtube.com/watch?v={}
     """
     for v in sorted(videos, key=lambda v: (as_ratio(v), v['like_count'])):
@@ -176,17 +199,12 @@ https://www.youtube.com/watch?v={}
             v['video_id'])
 
 
-@click.command('list')
+@cli.command('list')
 def list_():
     """List the channels already in the database."""
     channel_table = db['channel']
     for channel in channel_table.all():
         print '{} - {}'.format(channel['id'], channel['title'])
-
-
-cli.add_command(scrape)
-cli.add_command(bestof)
-cli.add_command(list_)
 
 
 if __name__ == '__main__':
