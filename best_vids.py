@@ -2,6 +2,7 @@
 import click
 import dataset
 import httplib2
+import json
 import os
 import sys
 
@@ -71,41 +72,49 @@ def scrape(username):
       flags = argparser.parse_args([])
       credentials = run_flow(flow, storage, flags)
 
+    print 'Building service...'
     youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
       http=credentials.authorize(httplib2.Http()))
 
     # Retrieve the contentDetails part of the channel resource for the
     # authenticated user's channel.
+    print 'Fetching channels...'
     channels_response = youtube.channels().list(
       forUsername=username,
-      part="contentDetails"
+      part="contentDetails,snippet",
     ).execute()
 
     # Try searching by id
     if len(channels_response["items"]) == 0:
+        print 'Fetching channels by id...'
         channels_response = youtube.channels().list(
           id=username,
-          part="contentDetails"
+          part="contentDetails,snippet",
         ).execute()
 
     assert len(channels_response["items"]) == 1
     channel = channels_response["items"][0]
 
+    channel_table = db['channel']
+    channel_table.upsert(dict(
+        channel_id=channel['id'],
+        data=json.dumps(channel),
+        title=channel['snippet']['title'],
+    ), ['channel_id'])
+
     # From the API response, extract the playlist ID that identifies the list
     # of videos uploaded to the authenticated user's channel.
     uploads_list_id = channel["contentDetails"]["relatedPlaylists"]["uploads"]
 
-    print "Videos in list %s" % uploads_list_id
-
     # Retrieve the list of videos uploaded to the authenticated user's channel.
+    print 'Fetching videos in list: ' + uploads_list_id
     playlistitems_list_request = youtube.playlistItems().list(
       playlistId=uploads_list_id,
       part="snippet",
       maxResults=50
     )
 
-    table = db['videos-' + username]
-
+    video_table = db['videos']
     while playlistitems_list_request:
       playlistitems_list_response = playlistitems_list_request.execute()
 
@@ -116,23 +125,30 @@ def scrape(username):
 
         videos_response = youtube.videos().list(
           id=video_id,
-          part='snippet,statistics').execute()
+          part='statistics',
+        ).execute()
         assert len(videos_response["items"]) == 1
         video = videos_response["items"][0]
 
-        likeCount = int(video['statistics']['likeCount'])
-        dislikeCount = int(video['statistics']['dislikeCount'])
-        print "%s (%s) %d, %d" % (title, video_id, likeCount, dislikeCount)
-        table.insert(dict(
-          title=title, video_id=video_id, likeCount=likeCount, dislikeCount=dislikeCount))
+        like_count = int(video['statistics']['likeCount'])
+        dislike_count = int(video['statistics']['dislikeCount'])
+        print "%s (%s) %d, %d" % (title, video_id, like_count, dislike_count)
+        video_table.upsert(dict(
+          video_id=video_id,
+          data=json.dumps(video),
+          channel_fk=channel['id'],
+          like_count=like_count,
+          dislike_count=dislike_count,
+          title=title,
+        ), ['video_id'])
 
       playlistitems_list_request = youtube.playlistItems().list_next(
         playlistitems_list_request, playlistitems_list_response)
 
 
 def as_ratio(video):
-    likes = max(video['likeCount'], 1)
-    total = likes + float(video['dislikeCount'])
+    likes = max(video['like_count'], 1)
+    total = likes + float(video['dislike_count'])
     return likes / total
 
 
@@ -140,26 +156,32 @@ def as_ratio(video):
 @click.argument('username')
 def bestof(username):
     """Best rated videos for a given user."""
-    table = db['videos-' + username]
+    channel_table = db['channel']
+    channel = channel_table.find_one(id=username) or channel_table.find_one(title=username)
 
-    template = """%f\t%d\t%d\t%s
-https://www.youtube.com/watch?v=%s
+    video_table = db['videos']
+    videos = video_table.find(channel_fk=channel['channel_id'])
+
+    template = """{:05.3f}\t{:,}\t{:,}\t{} ({:,} views)
+https://www.youtube.com/watch?v={}
     """
-
-    for v in sorted(table.all(), key=lambda v: (as_ratio(v), v['likeCount'])):
-        print template % (
+    for v in sorted(videos, key=lambda v: (as_ratio(v), v['like_count'])):
+        data = json.loads(v['data'])
+        print template.format(
             as_ratio(v),
-            v['likeCount'],
-            v['dislikeCount'],
+            v['like_count'],
+            v['dislike_count'],
             v['title'],
+            int(data['statistics']['viewCount']),
             v['video_id'])
 
 
 @click.command('list')
 def list_():
     """List the channels already in the database."""
-    for t in sorted(db.tables, key=lambda s: s.lower()):
-        print t[7:] # strip off the videos- prefix
+    channel_table = db['channel']
+    for channel in channel_table.all():
+        print '{} - {}'.format(channel['id'], channel['title'])
 
 
 cli.add_command(scrape)
