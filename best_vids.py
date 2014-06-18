@@ -11,8 +11,9 @@ from oauth2client.file import Storage
 from oauth2client.tools import argparser, run_flow
 
 
-db = dataset.connect('sqlite:///' +
-    os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mydatabase.db'))
+BEST_VIDS_DIR = os.path.dirname(os.path.realpath(__file__))
+
+db = dataset.connect('sqlite:///' + os.path.join(BEST_VIDS_DIR, 'mydatabase.db'))
 
 
 @click.group()
@@ -34,7 +35,7 @@ def scrape(username):
     #   https://developers.google.com/youtube/v3/guides/authentication
     # For more information about the client_secrets.json file format, see:
     #   https://developers.google.com/api-client-library/python/guide/aaa_client_secrets
-    CLIENT_SECRETS_FILE = "client_secrets.json"
+    CLIENT_SECRETS_FILE = os.path.join(BEST_VIDS_DIR, "client_secrets.json")
 
     # This variable defines a message to display if the CLIENT_SECRETS_FILE is
     # missing.
@@ -51,8 +52,7 @@ def scrape(username):
 
     For more information about the client_secrets.json file format, please visit:
     https://developers.google.com/api-client-library/python/guide/aaa_client_secrets
-    """ % os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                       CLIENT_SECRETS_FILE))
+    """ % os.path.abspath(os.path.join(BEST_VIDS_DIR, CLIENT_SECRETS_FILE))
 
     # This OAuth 2.0 access scope allows for read-only access to the authenticated
     # user's account, but not other types of account access.
@@ -64,11 +64,11 @@ def scrape(username):
       message=MISSING_CLIENT_SECRETS_MESSAGE,
       scope=YOUTUBE_READONLY_SCOPE)
 
-    storage = Storage("%s-oauth2.json" % sys.argv[0])
+    storage = Storage(os.path.join(BEST_VIDS_DIR, "best_vids.py-oauth2.json"))
     credentials = storage.get()
 
     if credentials is None or credentials.invalid:
-      flags = argparser.parse_args()
+      flags = argparser.parse_args([])
       credentials = run_flow(flow, storage, flags)
 
     youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
@@ -80,6 +80,13 @@ def scrape(username):
       forUsername=username,
       part="contentDetails"
     ).execute()
+
+    # Try searching by id
+    if len(channels_response["items"]) == 0:
+        channels_response = youtube.channels().list(
+          id=username,
+          part="contentDetails"
+        ).execute()
 
     assert len(channels_response["items"]) == 1
     channel = channels_response["items"][0]
